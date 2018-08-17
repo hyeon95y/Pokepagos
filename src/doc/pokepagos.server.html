@@ -1,0 +1,377 @@
+<!DOCTYPE html><html lang="en"><head><title>pokepagos.server</title></head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0"><meta name="groc-relative-root" content=""><meta name="groc-document-path" content="pokepagos.server"><meta name="groc-project-path" content="pokepagos.server.js"><link rel="stylesheet" type="text/css" media="all" href="assets/style.css"><script type="text/javascript" src="assets/behavior.js"></script><body><div id="meta"><div class="file-path">pokepagos.server.js</div></div><div id="document"><div class="segment"><div class="comments "><div class="wrapper"><h1 id="pokepagos-">Pokepagos 서버</h1>
+<p>node.js로 구현된 Pokepagso의 서버이다</p></div></div></div><div class="segment"><div class="comments "><div class="wrapper"><h2 id="1--">1. 서버 설정</h2>
+<p>모듈 추출</p></div></div><div class="code"><div class="wrapper"><span class="hljs-keyword">var</span> fs = <span class="hljs-built_in">require</span>(<span class="hljs-string">'fs'</span>);
+<span class="hljs-keyword">var</span> express = <span class="hljs-built_in">require</span>(<span class="hljs-string">'express'</span>);
+<span class="hljs-keyword">var</span> socketio = <span class="hljs-built_in">require</span>(<span class="hljs-string">'socket.io'</span>);</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>웹 서버와 소켓 서버 생성</p></div></div><div class="code"><div class="wrapper"><span class="hljs-keyword">var</span> app = express();
+<span class="hljs-keyword">var</span> io = socketio();
+<span class="hljs-keyword">var</span> server = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http'</span>).createServer(app);</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>소켓 서버를 웹 서버에 연결</p></div></div><div class="code"><div class="wrapper">io.attach(server);</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>전송해줄 html페이지 연결</p></div></div><div class="code"><div class="wrapper">app.use(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">request, response, next</span>)</span>{
+  fs.readFile(<span class="hljs-string">'/Users/HyeonWoo/Google 드라이브/Pokepagos/src/Pokepagos.html'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">error, data</span>)</span>{
+    response.writeHead(<span class="hljs-number">200</span>, {<span class="hljs-string">'Content-Type'</span>:<span class="hljs-string">'text/html'</span>});
+    response.end(data);
+  });
+});</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>서버 실행</p></div></div><div class="code"><div class="wrapper">server.listen(<span class="hljs-number">52273</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Server Running at http://127.0.0.1:52273'</span>);
+});</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><h2 id="2--">2. 함수 생성</h2>
+<p>닉네임 변수</p>
+<ul>
+<li>event isNicknameOkay에 사용</li>
+</ul></div></div><div class="code"><div class="wrapper"><span class="hljs-keyword">var</span> nicknames = [];</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>닉네임 뒤에 붙는 tempNumber생성</p>
+<ul>
+<li>event isNicknameOkay에 사용</li>
+</ul></div></div><div class="code"><div class="wrapper"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">createTempNumber</span>(<span class="hljs-params"></span>)
+</span>{
+  <span class="hljs-keyword">var</span> tempNumber = <span class="hljs-built_in">Math</span>.floor(<span class="hljs-built_in">Math</span>.random() * <span class="hljs-number">100</span>);
+  <span class="hljs-keyword">if</span>(tempNumber &lt; <span class="hljs-number">10</span> &amp;&amp; tempNumber.length == <span class="hljs-number">1</span>)
+    tempNumber = <span class="hljs-string">"0"</span> + tempNumber;
+  <span class="hljs-keyword">return</span> tempNumber;
+}</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>nicknames에서 해당 닉네임의 모든 태그가 사용 불능인지 판단</p>
+<ul>
+<li>event isNicknameOkay에 사용</li>
+</ul></div></div><div class="code"><div class="wrapper"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">checkOtherTags</span>(<span class="hljs-params">data</span>)
+</span>{
+  <span class="hljs-keyword">var</span> checkedNumber = [];
+  <span class="hljs-keyword">var</span> nicknameAssigned = <span class="hljs-literal">false</span>;
+  <span class="hljs-keyword">var</span> tempNickname = <span class="hljs-string">""</span>;
+  <span class="hljs-keyword">while</span> ((checkedNumber.length()!= <span class="hljs-number">100</span>) &amp;&amp; (nicknameAssigned === <span class="hljs-literal">false</span>))
+  {
+  tempNickname = data + <span class="hljs-string">'#'</span> + createTempNumber();
+  nicknameAssigned = nicknames.indexOf(tempNickname);
+  }
+  <span class="hljs-keyword">if</span>(nicknameAssigned === <span class="hljs-literal">true</span>)
+  {
+    <span class="hljs-keyword">return</span> tempNickname;
+  }
+  <span class="hljs-keyword">else</span> {
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
+  }
+}</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>방 객체 배열 변수</p></div></div><div class="code"><div class="wrapper"><span class="hljs-keyword">var</span> roomList = [];</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>var screenSize에 따라 반환할 객체의 개수를 정함</p>
+<ul>
+<li>event goToLobby, function returnRoomlist에 사용</li>
+<li>event getMoreRooms에 사용, function returnMoreRoomlist에 사용<h2 id="---">디자이너 승인 후 구현</h2>
+</li>
+</ul></div></div><div class="code"><div class="wrapper"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">howManyRoomsWillBeReturned</span>(<span class="hljs-params">data</span>)
+</span>{
+  <span class="hljs-comment">//data는 event goToLobby에서 전송받은 var screenSize</span>
+  <span class="hljs-keyword">return</span> <span class="hljs-number">5</span>;
+}</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>로비에 접속했을 경우에 var howManyRooms 만큼 방 리스트를 return해줌</p>
+<ul>
+<li>event goToLobby에 사용</li>
+</ul></div></div><div class="code"><div class="wrapper"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">returnRoomlist</span>(<span class="hljs-params">numberOfRoomsWillBeReturned</span>)
+</span>{
+  <span class="hljs-keyword">var</span> tempArray = [];
+  <span class="hljs-keyword">var</span> numberOfRoomsChecked = <span class="hljs-number">0</span>;
+  <span class="hljs-keyword">while</span> ((tempArray.length() &lt; numberOfRoomsWillBeReturned) &amp;&amp; (numberOfRoomsChecked&lt;roomList.length()))
+  {
+    <span class="hljs-keyword">if</span>(roomList[numberOfRoomsChecked].currentPlayer &lt; romList[numberOfRoomsChecked].maxPlayer)
+    {
+      tempArray.push(roomList[numberOfRoomsChecked]);
+    }
+    numberOfRoomsChecked++;
+  }
+  <span class="hljs-keyword">return</span> tempArray;
+}</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>방 리스트 추가로 요청할때</p>
+<ul>
+<li>event getMoreRooms에 사용</li>
+</ul></div></div><div class="code"><div class="wrapper"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">returnMoreRoomlist</span>(<span class="hljs-params">numberOfRoomsWillBeReturned, largestRoomNumber</span>)
+</span>{
+  <span class="hljs-keyword">var</span> tempArray = [];
+  <span class="hljs-keyword">var</span> indexOfLargestRoomNumber = findIndexOfRoom(largestRoomNumber);
+  <span class="hljs-keyword">while</span> ((tempArray.length() &lt; numberOfRoomsWillBeReturned) &amp;&amp; (indexOfLargestRoomNumber&lt;roomList.length()))
+  {
+    <span class="hljs-keyword">if</span>(roomList[indexOfLargestRoomNumber].currentPlayer &lt; roomList[indexOfLargestRoomNumber].maxPlayer)
+    {
+      tempArray.push(roomList[indexOfLargestRoomNumber]);
+    }
+    indexOfLargestRoomNumber++;
+  }
+  <span class="hljs-keyword">return</span> tempArray;
+}</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>roomNumber로 방의 인덱스 찾는 함수</p>
+<ul>
+<li>event enterRoom에 사용</li>
+<li>function returnMorRoomlist에 사용</li>
+</ul></div></div><div class="code"><div class="wrapper"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">findIndexOfRoom</span>(<span class="hljs-params">roomNumber</span>)
+</span>{
+  <span class="hljs-keyword">var</span> index = <span class="hljs-number">0</span>;
+  <span class="hljs-keyword">while</span>((roomList[index].roomNumber != roomNumber) &amp;&amp; (index &lt; roomList.length()))
+    {index++;}
+  <span class="hljs-keyword">if</span>(roomList[index].roomNumber == roomNumber){
+    <span class="hljs-keyword">return</span> index;
+  }
+  <span class="hljs-keyword">else</span> {
+    <span class="hljs-keyword">return</span> -<span class="hljs-number">1</span>;
+  }
+}</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>새로운 roomNumber 할당하는 함수</p>
+<ul>
+<li>event makeRoom에 사용</li>
+</ul></div></div><div class="code"><div class="wrapper"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">generateNewRoomNumber</span>(<span class="hljs-params"></span>)
+</span>{
+  <span class="hljs-keyword">var</span> tempRoomNumber = <span class="hljs-number">0</span>;
+  <span class="hljs-keyword">var</span> sameNumberExist = <span class="hljs-literal">true</span>;
+  <span class="hljs-keyword">while</span>(sameNumberExist === <span class="hljs-literal">true</span>)
+  {
+    <span class="hljs-comment">//똑같은거 있는지 확인하는 boolean</span>
+    tempBoolean = <span class="hljs-literal">false</span>;
+    <span class="hljs-keyword">for</span>(<span class="hljs-keyword">var</span> index=<span class="hljs-number">0</span>; index&lt;roomList.length(); index++)
+    {
+      <span class="hljs-comment">//똑같은거 있으면 tempBoolean true로 변경</span>
+      <span class="hljs-keyword">if</span>(tempRoomNumber == roomList[index].roomNumber){
+        tempBoolean = <span class="hljs-literal">true</span>;
+      }
+    }
+    <span class="hljs-comment">//똑같은게 없었으면 sameNumberExist false로 바꾸고 tempRoomNumber를 return</span>
+    <span class="hljs-keyword">if</span>(tempBoolean === <span class="hljs-literal">false</span>)
+    {
+      sameNumberExist = <span class="hljs-literal">false</span>;
+      <span class="hljs-keyword">return</span> tempRoomNumber;
+    }
+    <span class="hljs-comment">//똑같은거 있었으면 tempRoomNumber+1 하고 다음으로..</span>
+    <span class="hljs-keyword">else</span> {
+          tempRoomNumber++;
+    }
+  }
+}</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>유저를 방에서 내보내는 함수</p>
+<ul>
+<li>event kickRequest에 사용
+roomList 객체에서 player를 제거하는 역할을 한다
+내보낸 사람이 master이면 master를 위임한다</li>
+</ul></div></div><div class="code"><div class="wrapper"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">userExit</span>(<span class="hljs-params">roomNumber, kickedUser</span>)</span>{
+  <span class="hljs-comment">//방의 인덱스 찾음</span>
+  <span class="hljs-keyword">var</span> indexOfRoom = findIndexOfRoom(roomNumber);
+  <span class="hljs-comment">//플레이어의 인덱스 찾음</span>
+  <span class="hljs-keyword">var</span> indexOfPlayer = findIndexOfPlayer(indexOfRoom, kickedUser);
+  <span class="hljs-comment">//플레이어를 객체에서 삭제</span>
+  <span class="hljs-keyword">switch</span> (indexOfRoom) {
+    <span class="hljs-keyword">case</span> <span class="hljs-number">1</span> : roomList[indexOfRoom].player1 = <span class="hljs-string">""</span>;
+    <span class="hljs-keyword">break</span>;
+    <span class="hljs-keyword">case</span> <span class="hljs-number">2</span> : roomList[indexOfRoom].player2 = <span class="hljs-string">""</span>;
+    <span class="hljs-keyword">break</span>;
+    <span class="hljs-keyword">case</span> <span class="hljs-number">3</span> : roomList[indexOfRoom].player3 = <span class="hljs-string">""</span>;
+    <span class="hljs-keyword">break</span>;
+    <span class="hljs-keyword">case</span> <span class="hljs-number">4</span> : roomList[indexOfRoom].player4 = <span class="hljs-string">""</span>;
+    <span class="hljs-keyword">break</span>;
+    <span class="hljs-keyword">default</span> : <span class="hljs-keyword">break</span>;
+  }
+
+  <span class="hljs-comment">//새로운 방장 지정</span>
+  <span class="hljs-keyword">if</span>(kickedUser == romList[indexOfRoom].master)
+  {
+    <span class="hljs-keyword">var</span> masterSet = <span class="hljs-literal">false</span>;
+    <span class="hljs-keyword">if</span>(roomList[indexOfRoom].player1 !== <span class="hljs-string">""</span>)
+    {
+      roomList[indexOfRoom].master = roomList[indexOfRoom].player1;
+      masterSet = <span class="hljs-literal">true</span>;
+    }
+    <span class="hljs-keyword">if</span>((roomList[indexOfRoom].player2 !== <span class="hljs-string">""</span>) &amp;&amp; (masterSet === <span class="hljs-literal">false</span>))
+    {
+      roomList[indexOfRoom].master = roomList[indexOfRoom].player2;
+      masterSet = <span class="hljs-literal">true</span>;
+    }
+    <span class="hljs-keyword">if</span>((roomList[indexOfRoom].player3 !== <span class="hljs-string">""</span>) &amp;&amp; (masterSet === <span class="hljs-literal">false</span>))
+    {
+      roomList[indexOfRoom].master = roomList[indexOfRoom].player3;
+      masterSet = <span class="hljs-literal">true</span>;
+    }
+    <span class="hljs-keyword">if</span>((roomList[indexOfRoom].player4 !== <span class="hljs-string">""</span>) &amp;&amp; (masterSet === <span class="hljs-literal">false</span>))
+    {
+      roomList[indexOfRoom].master = roomList[indexOfRoom].player4;
+      masterSet = <span class="hljs-literal">true</span>;
+    }
+  }
+}</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>방에서 유저가 몇번째 player인지 찾는 함수</p>
+<ul>
+<li>event kickRequest에 사용</li>
+<li>function userExit()에 사용</li>
+</ul></div></div><div class="code"><div class="wrapper"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">findIndexOfPlayer</span>(<span class="hljs-params">indexOfRoom, playerToFind</span>)
+</span>{
+  <span class="hljs-keyword">if</span>(roomList[indexOfRoom].player1 == playerToFind){
+  <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>;}
+  <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(roomList[indexOfRoom].player2 == playerToFind){
+    <span class="hljs-keyword">return</span> <span class="hljs-number">2</span>;
+  }
+  <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(roomList[indexOfRoom].player3 == playerToFind){
+    <span class="hljs-keyword">return</span> <span class="hljs-number">3</span>;
+  }
+  <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(roomList[indexOfRoom].player4 == playerToFind){
+    <span class="hljs-keyword">return</span> <span class="hljs-number">4</span>;
+  }
+  <span class="hljs-keyword">else</span> {
+    <span class="hljs-keyword">return</span> -<span class="hljs-number">1</span>;
+  }
+}</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>방이 비어있으면 방 객체 제거하는 함수</p>
+<ul>
+<li>event kickRequest에 사용</li>
+</ul></div></div><div class="code"><div class="wrapper"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">removeIfRoomIsEmpty</span>(<span class="hljs-params">roomNumber</span>)
+</span>{
+  <span class="hljs-keyword">var</span> indexOfRoom = findIndexOfRoom(roomNumber);
+  <span class="hljs-keyword">if</span>(
+    roomList[indexOfRoom].player1 === <span class="hljs-string">""</span> &amp;&amp;
+    roomList[indexOfRoom].player2 === <span class="hljs-string">""</span> &amp;&amp;
+    roomList[indexOfRoom].player3 === <span class="hljs-string">""</span> &amp;&amp;
+    roomList[indexOfRoom].player4 === <span class="hljs-string">""</span>
+  ){
+    <span class="hljs-comment">//방 삭제</span>
+    roomList.splice(indexOfRoom, <span class="hljs-number">1</span>);
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"Room "</span> + indexOfRoom + <span class="hljs-string">"has been removed"</span>);
+  }
+}
+
+<span class="hljs-comment">/////////////////이 위로는 함수 구현부</span>
+
+
+
+
+
+<span class="hljs-comment">/////////////////이 아래는 소켓 구현부</span></div></div></div><div class="segment"><div class="comments "><div class="wrapper"><h2 id="3-io-event-">3. io event 설정</h2></div></div></div><div class="segment"><div class="code"><div class="wrapper">io.sockets.on(<span class="hljs-string">'connection'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">socket</span>)</span>{
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'#Socket.id '</span> + socket.id + <span class="hljs-string">' connected'</span>);</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>event isNicknameOkay</p>
+<ul>
+<li>data로 var nickname을 받는다</li>
+</ul></div></div><div class="code"><div class="wrapper">  socket.on(<span class="hljs-string">"isNicknameOkay"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>)</span>{
+
+    <span class="hljs-comment">//a) 동일한 닉네임이 없을경우 난수 태그 생성해서 추가</span>
+    <span class="hljs-keyword">if</span>(nicknames.indexOf(data) == -<span class="hljs-number">1</span>)
+    {
+      <span class="hljs-keyword">var</span> tempNickname = data + <span class="hljs-string">'#'</span> + createTempNumber();
+      nicknames.push(tempNickname);
+      socket.emit(<span class="hljs-string">'nicknameCheckResult'</span>, <span class="hljs-literal">true</span>);
+      <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'#Nickname assigned and pushed : '</span> + tempNickname + <span class="hljs-string">', socket.id : '</span> + socket.id);
+    }
+
+    <span class="hljs-comment">//b) 동일한 닉네임이 있고 다른 숫자가 사용가능할 경우</span>
+    <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(nicknames.indexOf(data) != -<span class="hljs-number">1</span>)
+    {
+      <span class="hljs-keyword">var</span> result = checkOtherTags(data);
+      <span class="hljs-keyword">if</span> (result !== <span class="hljs-literal">false</span>)
+      {
+        nicknames.push(result);
+        socket.emit(<span class="hljs-string">'nicknameCheckResult'</span>, <span class="hljs-literal">true</span>);
+        <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'#Nickname assigned and pushed : '</span> + result);
+      }
+
+      <span class="hljs-comment">//c) 동일한 닉네임이 있고 다른 숫자 사용 불가능할경우</span>
+      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (result === <span class="hljs-literal">false</span>)
+      {
+        socket.emit(<span class="hljs-string">'nicknameCheckResult'</span>, <span class="hljs-literal">false</span>);
+      }
+    }
+  });</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>event goToLobby</p>
+<ul>
+<li>data로 var screenSize를 받는다</li>
+</ul></div></div><div class="code"><div class="wrapper">  socket.on(<span class="hljs-string">"goToLobby"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>)</span>{
+    <span class="hljs-comment">//몇 개의 객체를 return할지 결정</span>
+    <span class="hljs-keyword">var</span> numberOfRoomsWillBeReturned = howManyRoomsWillBeReturned(data);
+    <span class="hljs-comment">//객체 골라내는 함수 실행하고, event returnRoomlist 발생</span>
+    socket.emit(<span class="hljs-string">'returnRoomlist'</span>, returnRoomlist(howManyRoomsWillBeReturned));
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'#Roomlist has been called'</span>);
+  });</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>event getMoreRooms</p>
+<ul>
+<li>data로 var roomList에 존재하는 가장 큰 roomNumber와 screenSize를 받는다</li>
+</ul></div></div><div class="code"><div class="wrapper">  socket.on(<span class="hljs-string">"getMoreRooms"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>)</span>{
+    <span class="hljs-comment">//몇 개의 객체를 return할지 결정</span>
+    <span class="hljs-keyword">var</span> numberOfRoomsWillBeReturned = howManyRoomsWillBeReturned(data.screenSize);
+    <span class="hljs-comment">//객체 골라내는 함수 실행하고, event sendMoreRooms 발생</span>
+    socket.emit(<span class="hljs-string">"sendMoreRooms"</span>, returnMoreRoomlist(howManyRoomsWillBeReturned, data.roomNumber));
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'#Additional roomlist has been called'</span>);
+  });</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>event enterRoom</p>
+<ul>
+<li>data로 var nickname과 var selectedRoom을 받는다</li>
+</ul></div></div><div class="code"><div class="wrapper">  socket.on(<span class="hljs-string">"enterRoom"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>)</span>{
+    <span class="hljs-comment">//입력 받은 방 번호에 접속가능한지 체크</span>
+    <span class="hljs-comment">//a)입력받은 방 번호가 서버에 존재하고 정원이 다 차지 않았음</span>
+    <span class="hljs-keyword">if</span>((findIndexOfRoom(data.selectedRoom) != -<span class="hljs-number">1</span>) &amp;&amp; (roomList[data.selectedRoom].currentPlayer &lt;roomList[data.selectedRoom].maxPlayer ))
+    {
+      socket.join(data.selectedRoom);
+      <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'#User '</span> + data.nickname + <span class="hljs-string">' entered room number '</span> + data.selectedRoom);
+      socket.emit(<span class="hljs-string">"roomEnterAvailable"</span>, <span class="hljs-string">"success"</span>);
+      socket.emit(<span class="hljs-string">"sendRoomdata"</span>, roomList[findIndexOfRoom(data.selectedRoom)]);
+    }
+    <span class="hljs-comment">//b)입력받은 방 번호가 서버에 존재하나 정원이 다 차있음</span>
+    <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> ((findIndexOfRoom(data.selectedRoom) != -<span class="hljs-number">1</span>) &amp;&amp; (roomList[data.selectedRoom].currentPlayer ==roomList[data.selectedRoom].maxPlayer )){
+      <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'#User '</span> + data.nickname + <span class="hljs-string">' reqeusted to enter room number '</span> + data.selectedRoom + <span class="hljs-string">', but rejected(full)'</span>);
+      socket.emit(<span class="hljs-string">"roomEnterAvailable"</span>, <span class="hljs-string">"full"</span>);
+    }
+    <span class="hljs-comment">//c)입력받은 방 번호가 서버에 존재하지 않음</span>
+    <span class="hljs-keyword">else</span> {
+      <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'#User '</span> + data.nickname + <span class="hljs-string">' reqeusted to enter room number '</span> + data.selectedRoom + <span class="hljs-string">', but rejected(notexist)'</span>);
+      socket.emit(<span class="hljs-string">"roomEnterAvailable"</span>, <span class="hljs-string">"notexist"</span>);
+    }
+  });</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>event makeRoom</p>
+<ul>
+<li>data로 var roomList의 객체를 받는다</li>
+<li>var object = {
+roomNumber : 27,
+roomName : ‘개허접만ㅎㅎ’,
+currentPlayer : 1,
+maxPlayer : 2,
+player1 : 아리#27,
+player2 : none,
+player3 : none,
+player4 : none,
+master : 아리#27,
+generationOfGame : 7,
+ruleA : ‘Sky Battle’,
+ruleB : ‘Normal Flat’
+}</li>
+<li>roomNumber가 비워진 상태로 받아서 roomNumber를 서버에서 할당한다</li>
+</ul></div></div><div class="code"><div class="wrapper">  socket.on(<span class="hljs-string">"makeRoom"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>)</span>{
+    <span class="hljs-comment">//방 번호 할당</span>
+    data.roomNumber = generateNewRoomNumber();
+    <span class="hljs-comment">//roomList에 방 객체 추가</span>
+    roomList.push(data);
+    <span class="hljs-comment">//방에 join</span>
+    socket.join(data.roomNumber);
+    <span class="hljs-comment">//event makeRoomAssigned로 roomList object보냄</span>
+    socket.emit(<span class="hljs-string">'makeRoomAssigned'</span>, data);
+  });</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>event kickRequest</p>
+<ul>
+<li>whoKicks와 kickWho가 같으면 방 나가기, 다르고 whoKicks가 master이면 강퇴</li>
+<li>다음과 같은 object를 data로 받는다 var kickRequest = {
+roomNumber : 27,
+whoKicks : 본인의 닉네임,
+kickWho : 강퇴당하는 사람의 닉네임}</li>
+</ul></div></div><div class="code"><div class="wrapper">  socket.on(<span class="hljs-string">"kickRequest"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>)</span>{
+    <span class="hljs-comment">//방 나가기</span>
+    <span class="hljs-keyword">if</span>(data.whoKicks == data.kickWho)
+    {
+      <span class="hljs-comment">//객체에서 player삭제하고 새로운 방장 지정</span>
+      userExit(data.roomNumber, data.kickWho);
+      <span class="hljs-comment">//방의 다른 유저들에게 event kickConfirmed 전송</span>
+      io.sockets.in(data.roomNumber).emit(<span class="hljs-string">"kickConfirmed"</span>, data.kickWho);
+      <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"#User "</span> + data.kickWho + <span class="hljs-string">" leaved Room "</span> + data.roomNumber);
+      <span class="hljs-comment">//빈 방일 경우 삭제</span>
+      removeIfRoomIsEmpty();
+
+    }
+    <span class="hljs-comment">//강퇴</span>
+    <span class="hljs-keyword">if</span>(data.whoKicks == roomList[data.roomNumber].master)
+    {
+      <span class="hljs-comment">//객체에서 player삭제, master와 kickWho가 다르므로 새로운 방장은 지정되지 않는다</span>
+      userExit(data.roomNumber, data.kickWho);
+      <span class="hljs-comment">//방의 다른 유저들에게 event kickConfirmed 전송</span>
+      io.sockets.in(data.roomNumber).emit(<span class="hljs-string">"kickConfiremd"</span>, data.kickWho);
+      <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"#User "</span> + data.kickWho + <span class="hljs-string">" is kicked from Room "</span> + data.roomNumber);
+      <span class="hljs-comment">//빈 방일 경우 삭제</span>
+      <span class="hljs-comment">//정상적으로 사용되면 이 코드가 작동할 일은 없지만 네트워크 문제로</span>
+      <span class="hljs-comment">//실행이 꼬이게 되면 여기서 방 폭파해야함</span>
+      removeIfRoomIsEmpty();
+    }
+
+  });</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>event leaveRoom</p>
+<ul>
+<li>kickRequest에서 객체를 제거하고 kickConfirmed를 보내는데 이에 대한 클라이언트의 응답이다</li>
+<li>이 응답을 이용해 나간 유저를 특정하고 socket 연결을 해제한다</li>
+<li>data로 var nickname, var roomNumber를 받는다</li>
+</ul></div></div><div class="code"><div class="wrapper">  socket.on(<span class="hljs-string">"leaveRoom"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>)</span>{
+    <span class="hljs-comment">//방 연결 해제</span>
+    socket.leave(data.roomNumber);
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"#User "</span> + data.nickname + <span class="hljs-string">" disconnected from Room "</span> + data.roomNumber);
+  });</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>event disconnected</p>
+<ul>
+<li>접속 종료되면 닉네임 제거<h2 id="html---">html 테스트 이후 구현</h2>
+</li>
+</ul></div></div><div class="code"><div class="wrapper">  socket.on(<span class="hljs-string">'disconnect'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"#Socket.id "</span> + socket.id + <span class="hljs-string">" disconnected"</span>);
+
+  });
+
+
+});</div></div></div></div></body></html>
